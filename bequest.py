@@ -137,7 +137,7 @@ def select_folder():
 
 
 def manual():
-    messagebox.showinfo("About the Bequest tool", "This tool creates a series of QR codes containiing the provided text encrypted with the key phrase. To decrypt QR codes read them in order with a reader like QtQR, paste content in the box and provide the same key phrase. Keep QR codes in safe places, like documents that usually contain QR codes like a boarding pass.")
+    messagebox.showinfo("About the Bequest tool", "This tool creates a series of QR codes containiing the provided text encrypted with the key phrase. To decrypt QR codes read them in order with a reader like QtQR, paste content in the box and provide the same key phrase. More info at https://github.com/ASeriousMister/Bequest.")
 
 
 # Create the main window
