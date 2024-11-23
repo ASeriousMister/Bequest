@@ -24,7 +24,7 @@ To encrypt text it is enough to:
 
 ### Decrypting text
 To decrypt the text it is necessary to:
-- read the Qr codes respecting the correct order with a tool like QtQR, which can be installed in Debian based environments with `sudo apt install qtqr`;
+- read the Qr codes respecting the correct order with a tool like QtQR, which can be installed in Debian based environments with `sudo apt install qtqr` (in some cases it was noticed that QR codes aren't read properly with QtQR and CoBang but the same codes were read in the correct way by smartphones);
 - paste the text in the bigger text box;
 - type the key phrase in the smaller text box;
 - select a folder where to save the decrypted text (it is recommended to select an empty folder. The tool is saving the text in a file named `output.txt` and will overwrite existing files with this name, prioritizing the need to access the decrypted information);
