@@ -2,27 +2,46 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 import qrcode
 import os
+import string
+import random
 
 
-def gen_qr_codes(text, block_size=200):
-    # Divides text in blocks of a desired size
+def gen_qr_codes(text, block_size=180):
+    # Divides text into blocks of the desired size
     blocks = [text[i:i + block_size] for i in range(0, len(text), block_size)]
 
-    # Create QR codes for each block and save them in .png files
+    # Pad the last block with random characters if it's less than block_size characters
+    if len(blocks) > 0 and len(blocks[-1]) < block_size:
+        padding_length = block_size - len(blocks[-1])
+        blocks[-1] += ''.join(random.choices(string.ascii_letters + string.digits, k=padding_length))
+
+    # Create QR codes for each block and save them as .png files
     for i, block in enumerate(blocks):
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
             box_size=10,
             border=4,
-        )
-        qr.add_data(block)
-        qr.make(fit=True)
+        )      
+        try:
+            # Encode block in UTF-8 and add it to the QR code
+            qr.add_data(block.encode('utf-8'))
+            qr.make(fit=True)
+            # Generate and save the QR code image
+            img = qr.make_image(fill='black', back_color='white')
+            file_name = f"qr_code_{i + 1}.png"
+            img.save(file_name)
+            print(f"Saved: {file_name}")
+        except Exception as e:
+            print(f"Error creating QR code for block {i + 1}: {e}")
 
-        img = qr.make_image(fill='black', back_color='white')
-        file_name = f"qr_code_{i + 1}.png"
-        img.save(file_name)
-        print(f"Saved: {file_name}")
+
+# Create a generator that yields the shift value for each letter based on the ASCII values of the word series.
+def get_shift(key_phrase_l):
+    shift_string = ''.join(key_phrase_l)
+    while True:
+        for char in shift_string:
+            yield ord(char.lower()) - ord('a')
 
 
 def encrypt_text():
@@ -36,36 +55,27 @@ def encrypt_text():
         messagebox.showwarning("Please select the folder where to save files.")
         return
 
+    key_phrase_l = key_phrase.split()
+    shift_generator = get_shift(key_phrase_l)
     new_text = []
-    alphabet = 'abcdefghijklmnopqrstuvwxyzàèéìòù'
-    alphabet_cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈÉÌÒÙ'
-    alphabet_lenght = len(alphabet)
-    
-    # Prepare key as list of indexes
-    index_key = [(alphabet.index(letter) if letter in alphabet else alphabet_cap.index(letter))
-                     for letter in key_phrase if letter in alphabet or letter in alphabet_cap]
-    key_lenght = len(index_key)
-    # encrypting    
-    for i, letter in enumerate(text):
-        if letter in alphabet:
-            index_letter = alphabet.index(letter)
-            index_shift = index_key[i % key_lenght]           
-            if mode == 'decrypt':
-                index_shift = -index_shift           
-            new_letter = alphabet[(index_letter + index_shift) % alphabet_lenght]
-            new_text.append(new_letter)
-        elif letter in alphabet_cap:
-            index_letter = alphabet_cap.index(letter)
-            index_shift = index_key[i % key_lenght]           
-            if mode == 'decrypt':
-                index_shift = -index_shift           
-            new_letter = alphabet_cap[(index_letter + index_shift) % alphabet_lenght]
-            new_text.append(new_letter)
+
+    for char in text:
+        if char.isalpha():  # Only shift alphabet characters
+            shift = next(shift_generator)
+            if mode == "decrypt":
+                shift = -shift  # Reverse the shift for decryption
+            
+            base = ord('A') if char.isupper() else ord('a')
+            # Shift character and wrap within the alphabet range
+            shifted_char = chr((ord(char) - base + shift) % 26 + base)
+            new_text.append(shifted_char)
         else:
-            new_text.append(letter)
+            new_text.append(char)  # Keep non-alphabet characters unchanged
     if mode == 'encrypt':
         #create QR codes
-        gen_qr_codes(''.join(new_text))
+        text_4_qr = ''.join(new_text)
+        print(f'Encrypted text: {text_4_qr}')
+        gen_qr_codes(text_4_qr)
         messagebox.showinfo("Success", f"QR_codes saved to {selected_folder}!")
     elif mode == 'decrypt':
         with open('output.txt', 'w') as f:
@@ -84,35 +94,22 @@ def decrypt_text():
         messagebox.showwarning("Please select the folder where to save files.")
         return
 
+    key_phrase_l = key_phrase.split()
+    shift_generator = get_shift(key_phrase_l)
     new_text = []
-    alphabet = 'abcdefghijklmnopqrstuvwxyzàèéìòù'
-    alphabet_cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈÉÌÒÙ'
-    alphabet_lenght = len(alphabet)
-    
-    # Prepare key as list of indexes
-    index_key = [(alphabet.index(letter) if letter in alphabet else alphabet_cap.index(letter))
-                     for letter in key_phrase if letter in alphabet or letter in alphabet_cap]
-    key_lenght = len(index_key)  
-    # Decrypting 
-    for i, letter in enumerate(text):
-        if letter in alphabet:
-            index_letter = alphabet.index(letter)
-            index_shift = index_key[i % key_lenght]           
-            if mode == 'decrypt':
-                index_shift = -index_shift           
-            new_letter = alphabet[(index_letter + index_shift) % alphabet_lenght]
-            new_text.append(new_letter)
-        elif letter in alphabet_cap:
-            index_letter = alphabet_cap.index(letter)
-            index_shift = index_key[i % key_lenght]
+
+    for char in text:
+        if char.isalpha():  # Only shift alphabet characters
+            shift = next(shift_generator)
+            if mode == "decrypt":
+                shift = -shift  # Reverse the shift for decryption
             
-            if mode == 'decrypt':
-                index_shift = -index_shift
-            
-            new_letter = alphabet_cap[(index_letter + index_shift) % alphabet_lenght]
-            new_text.append(new_letter) 
+            base = ord('A') if char.isupper() else ord('a')
+            # Shift character and wrap within the alphabet range
+            shifted_char = chr((ord(char) - base + shift) % 26 + base)
+            new_text.append(shifted_char)
         else:
-            new_text.append(letter)
+            new_text.append(char)  # Keep non-alphabet characters unchanged
     if mode == 'encrypt':
         #create QR codes
         gen_qr_codes(''.join(new_text))
@@ -137,7 +134,7 @@ def select_folder():
 
 
 def manual():
-    messagebox.showinfo("About the Bequest tool", "This tool creates a series of QR codes containiing the provided text encrypted with the key phrase. To decrypt QR codes read them in order with a reader like QtQR, paste content in the box and provide the same key phrase. More info at https://github.com/ASeriousMister/Bequest.")
+    messagebox.showinfo("About the tool", "This tool creates a series of QR codes containiing the provided text encrypted with the key phrase. To decrypt QR codes read them in order with a reader like QtQR, paste content in the box and provide the same key phrase. Keep QR codes in safe places, like documents that usually contain QR codes like a boarding pass.")
 
 
 # Create the main window
